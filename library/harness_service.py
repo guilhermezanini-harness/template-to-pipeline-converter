@@ -31,6 +31,25 @@ class HarnessService:
             endpoint = f"/v1/orgs/{org_identifier}/projects/{project_identifier}/templates/{template_identifier}/versions/{version}"
         return self._make_request("GET", endpoint)
     
+    def fetch_stable_template_yaml(self, template_identifier, org_identifier=None, project_identifier=None):
+        if template_identifier.startswith("org"):
+            endpoint = f"/v1/orgs/{org_identifier}/templates/{template_identifier.replace('org.', '')}"
+        elif template_identifier.startswith("account"):
+            endpoint = f"/v1/templates/{template_identifier.replace('account.', '')}"
+        else:
+            endpoint = f"/v1/orgs/{org_identifier}/projects/{project_identifier}/templates/{template_identifier}"
+        return self._make_request("GET", endpoint)
+    
+    def create_template_pipeline(self, template_data, org_identifier=None, project_identifier=None):
+        if project_identifier:
+            endpoint = f"/v1/orgs/{org_identifier}/projects/{project_identifier}/templates"
+        elif org_identifier:
+            endpoint = f"/v1/orgs/{org_identifier}/templates"
+        else:
+            endpoint = f"/v1/templates"
+            
+        return self._make_request("POST", endpoint, json=template_data)
+    
     def create_pipeline(self, org_identifier, project_identifier, pipeline_data):
         endpoint = f"/v1/orgs/{org_identifier}/projects/{project_identifier}/pipelines"
         return self._make_request("POST", endpoint, json=pipeline_data)
