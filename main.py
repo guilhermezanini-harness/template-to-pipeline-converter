@@ -28,6 +28,9 @@ def main():
 
     pipeline_json = yaml.safe_load(pipeline_yaml).copy()
 
+    # Backup for the current pipeline.
+    print(pipeline_yaml)
+
     if pipeline_json:
         template_ref = pipeline_json['pipeline']['template']['templateRef']
         template_version = pipeline_json['pipeline']['template']['versionLabel']
@@ -48,12 +51,16 @@ def main():
 
             replaced_pipeline = helpers.find_and_update_json_values(template_json, pipeline_json)
 
+            print("Deleting the old pipeline...")
+            harness_api.delete_pipeline(pipeline_parameters['org_identifier'], pipeline_parameters['project_identifier'], pipeline_json['pipeline']['identifier'])
+            print("Pipeline deleted successfully.")
+
             # Prepare the updated pipeline payload for creation.
             pipeline_payload_conversion = {
                 "pipeline": {
                     **replaced_pipeline['template']['spec'],
-                    "identifier": pipeline_json['pipeline']['identifier'] + "_temporary",
-                    "name": pipeline_json['pipeline']['identifier'] + "_temporary"
+                    "identifier": pipeline_json['pipeline']['identifier'],
+                    "name": pipeline_json['pipeline']['identifier']
                 }
             }
             
@@ -69,19 +76,6 @@ def main():
                 pipeline_parameters["project_identifier"], 
                 pipeline_data
             )
-
-            print("Deleting the old pipeline...")
-            harness_api.delete_pipeline(pipeline_parameters['org_identifier'], pipeline_parameters['project_identifier'], pipeline_json['pipeline']['identifier'])
-            print("Pipeline deleted successfully.")
-            
-            print("Renaming new pipeline...")
-            pipeline_payload_conversion['pipeline']['name'] = pipeline_json['pipeline']['name']
-            pipeline_data = {
-                "pipeline_yaml": yaml.dump(pipeline_payload_conversion),
-                "identifier": pipeline_payload_conversion['pipeline']['identifier'],
-                "name": pipeline_json['pipeline']['name']
-            }
-            harness_api.update_pipeline(pipeline_parameters['org_identifier'], pipeline_parameters['project_identifier'], pipeline_data, pipeline_payload_conversion['pipeline']['identifier'])
 
         else:
             print("Failed to fetch template YAML. Response:", template_response)
